@@ -280,7 +280,7 @@ FROM table1
 JOIN table2
 ON table1.account_id = table2.id;
 
---Quiz
+--Quiz - WITH
 
 --1
 --Provide the name of the sales_rep in each region with
@@ -385,19 +385,100 @@ LIMIT 1;
 --standard_qty paper throughout their lifetime as a customer?
 
 WITH t1 AS(
-    SELECT a.name AS acc_name, COUNT(o) sum
+    SELECT a.id AS id,
+  a.name AS acc_name,
+  SUM(o.standard_qty) sum_qty
     FROM accounts a
     JOIN orders o
-    ON accounts.id = orders.account_id
-    GROUP BY acc_name
+    ON a.id = o.account_id
+    GROUP BY a.id, acc_name
+    ORDER BY sum_qty DESC
+)
+
+
+SELECT a.name AS acc_name, SUM(o.total) AS sum_tot
+FROM accounts a
+JOIN orders o
+ON a.id = o.account_id
+JOIN t1
+ON a.id = t1.id
+GROUP BY a.name
+
+HAVING SUM(o.total) > MAX(t1.sum_qty)
+
+
+--4
+--For the customer that spent the most (in total over their lifetime as
+--a customer) total_amt_usd, how many web_events did they have for each channel?
+
+
+WITH t1 AS(
+    SELECT a.id AS temp_id,
+    a.name,
+    SUM(o.total_amt_usd)
+    FROM accounts a
+    JOIN orders o ON a.id = o.account_id
+    GROUP BY a.id, a.name
     ORDER BY sum desc
     LIMIT 1
 )
 
-SELECT accounts.name, COUNT(*)
-FROM accounts
-JOIN orders
-ON accounts.id = orders.account_id
 
-WHERE orders
+SELECT a.name AS namee, we.channel AS channel,
+COUNT(we) AS no_events
+
+FROM accounts a
+JOIN web_events we
+ON a.id = we.account_id
+JOIN t1 ON a.id = t1.temp_id
+
+GROUP BY namee, a.id, t1.temp_id, channel
+
+HAVING a.id = t1.temp_id
+ORDER BY namee
+
+--5
+--What is the lifetime average amount spent
+--in terms of total_amt_usd for the top 10 total spending accounts?
+
+WITH t1 AS
+(
+    SELECT a.name AS temp_name,
+    a.id AS temp_id,
+    SUM(o.total_amt_usd) AS temp_ltv
+    FROM accounts a
+    JOIN orders o on a.id = o.account_id
+    GROUP BY temp_name, temp_id
+    ORDER BY temp_ltv desc
+    LIMIT 10
+)
+
+SELECT ROUND(AVG(t1.temp_ltv),3)
+FROM t1;
+
+--6
+--What is the lifetime average amount spent in terms of total_amt_usd,
+--including only the companies that spent more per order, on
+--average, than the average of all orders.
+
+
+WITH t1 AS
+(
+    SELECT a.name AS temp_name,
+    a.id AS temp_id,
+    AVG(o.total_amt_usd) AS temp_lt_av
+    FROM accounts a
+    JOIN orders o on a.id = o.account_id
+    GROUP BY temp_id, temp_name
+)
+
+    SELECT
+    AVG(o.total_amt_usd)
+    FROM orders o
+    JOIN accounts a ON a.id = o.account_id
+    JOIN t1 ON a.id = t1.temp_id
+GROUP BY t1.temp_lt_av
+HAVING t1.temp_lt_av > AVG(o.total_amt_usd)
+--Not there
+
 
