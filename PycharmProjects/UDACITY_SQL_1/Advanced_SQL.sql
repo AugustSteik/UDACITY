@@ -41,3 +41,77 @@ ORDER BY o1.account_id, o1.occurred_at
 
 
 --UNIONs
+
+SELECT *
+FROM accounts a1
+WHERE a1.name = 'Walmart'
+
+UNION ALL
+
+SELECT *
+FROM accounts a2
+WHERE a2.name = 'Disney'
+
+--Is the same as:
+SELEDT *
+FROM accounts
+WHERE name = 'Walmart' OR name = 'Disney'
+
+
+-- Checking that each name appears twice...
+
+WITH tt1 AS (SELECT *
+FROM accounts a1
+
+UNION ALL
+
+SELECT *
+FROM accounts a2)
+
+SELECT name, COUNT(*)
+FROM tt1
+GROUP BY name
+
+
+-- Performance Tuning
+
+
+-- Checking query logic by using limited dataset from subquery:
+SELECT account_id,
+       SUM(poster_qty) AS sum_poster_qty
+FROM   (SELECT * FROM orders LIMIT 100) sub
+WHERE  occurred_at >= '2016-01-01'
+AND    occurred_at < '2016-07-01'
+GROUP BY 1
+
+--Using EXPLAIN to check the order of query operations:
+
+EXPLAIN SELECT *
+FROM web_events
+WHERE occurred_at >='2016-01-01' AND occurred_at < '2016-02-01'
+
+-- Gives an indication of the cost for certain operations.
+
+
+--Joining subqueries to improve performance:
+
+SELECT COALESCE(orders.date, web_events.date) AS date,
+orders.active_sales_reps,
+orders.orders,
+web_events.web_visits
+FROM(
+        SELECT DATE_TRUNC('day', o.occurred_at) AS date,
+        COUNT(DISTINCT a.sales_rep_id) AS active_sales_reps,
+        COUNT(DISTINCT o.id) AS orders
+        FROM accounts a
+        JOIN orders o ON o.account_id = a.id
+        GROUP BY 1) AS orders
+
+FULL JOIN(
+   SELECT DATE_TRUNC('day', we.occurred_at) AS date,
+          COUNT(we.id) AS web_visits
+   FROM   web_events we
+   GROUP BY 1) AS web_events
+
+ON orders.date = web_events.date
+ORDER BY 1 DESC
