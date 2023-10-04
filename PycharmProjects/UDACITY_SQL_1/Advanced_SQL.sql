@@ -53,7 +53,7 @@ FROM accounts a2
 WHERE a2.name = 'Disney'
 
 --Is the same as:
-SELEDT *
+SELECT *
 FROM accounts
 WHERE name = 'Walmart' OR name = 'Disney'
 
