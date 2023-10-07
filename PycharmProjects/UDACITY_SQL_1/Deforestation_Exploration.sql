@@ -8,122 +8,96 @@ SELECT fa.*,
 	   r.income_group,
        100*(fa.forest_area_sqkm/(la.total_area_sq_mi*2.59)) AS percent_forest
     FROM forest_area fa
-    JOIN land_area la ON fa.country_code = la.country_code
+    FULL OUTER JOIN land_area la ON fa.country_code = la.country_code
     AND fa.year = la.year
-    JOIN regions r ON r.country_code = la.country_code
-    WHERE forest_area_sqkm IS NOT NULL
-    AND la.total_area_sq_mi IS NOT NULL);
+    JOIN regions r ON r.country_code = la.country_code);
 
 ------------------------------------------------------------------------------
 -- 1 - Global Situation
 
 -- Query 1.1
--- Finding the total forest area of the world in 1990:
-SELECT country_name, forest_area_sqkm
-     FROM forestation
-     WHERE country_name = 'World'
-     AND year = '1990'
+-- Comparing global forest area data from 1990 to 2016:
+SELECT *,100*(new_forest_area-old_forest_area)/old_forest_area AS global_fa_change_pc,
+new_forest_area - old_forest_area AS global_fa_change_km
+FROM (
+SELECT tt1.country_name,
+tt2. forest_area_sqkm AS old_forest_area,
+tt1.forest_area_sqkm AS new_forest_area
+       FROM forestation tt1
+       JOIN forestation tt2 ON tt1.country_name = tt2.country_name
+       WHERE tt1.country_name = 'World'
+       AND tt1.year = '2016'
+       AND tt2.year = '1990'
+       AND tt1.forest_area_sqkm IS NOT NULL
+       AND tt2.forest_area_sqkm IS NOT NULL) global_forest_area
 
 -- Query 1.2
--- Finding the total forest area of the world in 2016:
-SELECT country_name, forest_area_sqkm
-     FROM forestation
-     WHERE country_name = 'World'
-     AND year = '2016'
---39958245.9- 41282694.9 = -1,324,449sqkm
-
--- Query 1.3
-WITH tt1 AS(
-SELECT country_name, forest_area_sqkm
-     FROM forestation
-     WHERE country_name = 'World'
-     AND year = '2016'),
-
-tt2 AS(
-SELECT country_name, forest_area_sqkm
-     FROM forestation
-     WHERE country_name = 'World'
-     AND year = '1990'),
-
-tt3 AS(
-SELECT tt1.forest_area_sqkm - tt2.forest_area_sqkm AS forest_area_loss,
-       (100*(tt1.forest_area_sqkm - tt2.forest_area_sqkm)/tt2.forest_area_sqkm) AS percentage_change
-     FROM tt1
-     JOIN tt2 ON tt1.country_name = tt2.country_name)
-
--- Use the subqueries above with either 1.3.a or 1.3.b to answer different parts of the question
-
--- Query 1.3.a
--- Global forest area decrease from 1990 to 2016 as the area in km^2 and a percentage:
-SELECT tt1.forest_area_sqkm - tt2.forest_area_sqkm AS forest_area_loss,
-       (100*(tt1.forest_area_sqkm - tt2.forest_area_sqkm)/tt2.forest_area_sqkm) AS percentage_change
-     FROM tt1
-     JOIN tt2 ON tt1.country_name = tt2.country_name;
-
--- Query 1.3.b
 -- Identifying the country with the total land area just below
 -- the area of forest lost globally from 1990 to 2016:
 SELECT  country_name,
         land_area_sqkm
      FROM forestation
-     WHERE land_area_sqkm <= (SELECT -1*(forest_area_loss) FROM tt3)
+     WHERE land_area_sqkm <= (
+     SELECT ABS(tt1.forest_area_sqkm - tt2.forest_area_sqkm) AS forest_area_loss
+           FROM forestation tt1
+           JOIN forestation tt2 ON tt1.country_name = tt2.country_name
+           WHERE tt1.country_name = 'World'
+           AND tt1.year = '2016'
+           AND tt2.year = '1990'
+           AND tt1.forest_area_sqkm IS NOT NULL
+           AND tt2.forest_area_sqkm IS NOT NULL)
      AND year = '2016'
      ORDER BY land_area_sqkm DESC
      LIMIT 1;
 
+
 ------------------------------------------------------------------------------
 -- 2 - Regional Outlook
 
--- Query 2.1
--- Percentage forest area by region for 1990:
---SELECT region,
---       100*(SUM(forest_area_sqkm)/SUM(land_area_sqkm)) AS percent_forest
---    FROM forestation
---    WHERE year = '1990'
---    AND forest_area_sqkm IS NOT NULL
---    AND land_area_sqkm IS NOT NULL
---    GROUP BY region
---    ORDER BY percent_forest DESC;
---
----- Query 2.2
----- Percentage forest area by region for 2016:
---SELECT region,
---       100*(SUM(forest_area_sqkm)/SUM(land_area_sqkm)) AS percent_forest
---    FROM forestation
---    WHERE year = '2016'
---    AND forest_area_sqkm IS NOT NULL
---    AND land_area_sqkm IS NOT NULL
---    GROUP BY region
---    ORDER BY percent_forest DESC;
-
+-- 2.1
+-- Percent forest area for each region:
 SELECT tt1.region,
-       AVG(tt1.percent_forest) AS old_data,
-       AVG(tt2.percent_forest) AS new_data
+       100*SUM(tt1.forest_area_sqkm)/SUM(tt1.land_area_sqkm) AS old_percent_forest,
+       100*SUM(tt2.forest_area_sqkm)/SUM(tt2.land_area_sqkm) AS new_percent_forest
 FROM forestation tt1
 JOIN forestation tt2 ON tt1.country_name = tt2.country_name
 WHERE tt1.year = '1990'
 AND tt2.year = '2016'
+AND tt1.forest_area_sqkm IS NOT NULL AND tt1.land_area_sqkm IS NOT NULL
+AND tt2.forest_area_sqkm IS NOT NULL AND tt2.land_area_sqkm IS NOT NULL
+
 GROUP BY tt1.region
-ORDER BY tt1.region ASC;
+ORDER BY old_percent_forest DESC;
+
 
 ------------------------------------------------------------------------------
 -- 3 - Country-Level Detail
 
+--3.A and 3.B
+
 -- Query 3.1
-SELECT tt1.country_name,
-       tt1.region,
-       tt1.forest_area_sqkm AS old_data,
-       tt2.forest_area_sqkm AS new_data
-FROM forestation tt1
-JOIN forestation tt2 ON tt1.country_name = tt2.country_name
-WHERE tt1.year = '1990'
-AND tt2.year = '2016'
-ORDER BY tt1.country_name ASC
+-- Finding the forest area change in sqkm for each country:
+SELECT country_name,
+    region,
+    new_data-old_data AS forest_area_change_sqkm
+FROM(
+    SELECT tt1.country_name,
+           tt1.region,
+           tt1.forest_area_sqkm AS old_data,
+           tt2.forest_area_sqkm AS new_data
+    FROM forestation tt1
+    JOIN forestation tt2 ON tt1.country_name = tt2.country_name
+    WHERE tt1.year = '1990'
+    AND tt2.year = '2016'
+        AND tt1.forest_area_sqkm IS NOT NULL
+        AND tt2.forest_area_sqkm IS NOT NULL
+        AND tt1.country_name NOT LIKE 'World') self_join
+
+ORDER by forest_area_change_sqkm ASC;
 
 
 -- Query 3.2
- --Finding the forest area change as a percentage for each country:
-
+-- Finding the forest area change as a percentage for each country:
 
 SELECT tt1.country_name,
        tt1.region,
@@ -134,7 +108,9 @@ WHERE tt1.year = '1990'
 AND tt2.year = '2016'
     AND tt1.forest_area_sqkm IS NOT NULL
     AND tt2.forest_area_sqkm IS NOT NULL
-ORDER BY percentage_change DESC;
+    AND tt1.country_name NOT LIKE 'World'
+    ORDER BY percentage_change ASC;
+
 
 -- 3.C
 
@@ -154,7 +130,9 @@ SELECT country_name,
 	    END AS quartile
     FROM forestation
     WHERE year = '2016'
-    AND country_name NOT LIKE 'World') ranking
+    AND country_name NOT LIKE 'World'
+    AND forest_area_sqkm IS NOT NULL
+    AND land_area_sqkm IS NOT NULL) ranking
 
     GROUP BY quartile
     ORDER BY quartile DESC;
@@ -178,6 +156,8 @@ SELECT country_name,
     FROM forestation
     WHERE year = '2016'
     AND country_name NOT LIKE 'World'
+    AND forest_area_sqkm IS NOT NULL
+    AND land_area_sqkm IS NOT NULL
     ) ranking
 
     WHERE quartile = 4
