@@ -57,4 +57,15 @@ INSERT INTO users (username) SELECT DISTINCT username FROM bad_comments;
 
 INSERT INTO topics (name) SELECT DISTINCT topic FROM bad_posts;
 
---SELECT * FROM bad_posts bp JOIN bad_comments bc ON bp.text_content = bc.text_content;
+
+--natvigating existing data:
+SELECT COUNT(title) FROM bad_posts; = 50000
+SELECT DISTINCT COUNT(title) FROM bad_posts; = 50000
+
+-- All titles unique.
+
+UPDATE bad_posts (title)
+INSERT INTO posts (title, text_content, url) SELECT title, text_content, url FROM bad_posts;
+
+
+
