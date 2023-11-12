@@ -3,6 +3,7 @@
 --MongoDB
 
 --SELECTing where NOT LIKE:
+
 db.presidents.find({
 	firstname: {
 		$not: { $eq: 'George'} --i.e. NOT EQUAL
@@ -11,6 +12,7 @@ db.presidents.find({
 
 
 --Similarly for OR:
+
 db.presidents.find({
 		$or: [
 			{LastName: 'George'},
