@@ -20,7 +20,7 @@ CREATE TABLE posts (
     "id" BIGSERIAL  PRIMARY KEY,
     "created_on" TIMESTAMP WITH TIME ZONE,
     "user_id" BIGINT,
-    "topic_id" BIGINT,
+    "topic_id" BIGINT NOT NULL,
     "title" VARCHAR(100) NOT NULL,
     "text_content" TEXT DEFAULT NULL,
     "url" TEXT DEFAULT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE posts (
 CREATE TABLE comments (
     "id" BIGSERIAL PRIMARY KEY,
     "created_on" TIMESTAMP WITH TIME ZONE,
-    "post_id" BIGINT,
+    "post_id" BIGINT NOT NULL,
     "user_id" BIGINT,
     "parent_id" BIGINT,
     "content" TEXT NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE user_votes (
     "id" BIGSERIAL PRIMARY KEY,
     "voted_on" TIMESTAMP WITH TIME ZONE,
     "user_id" BIGINT,
-    "post_id" BIGINT,
+    "post_id" BIGINT NOT NULL,
     "vote" SMALLINT CHECK (vote = 1 OR vote = -1),
     UNIQUE (user_id, post_id),
     FOREIGN KEY (user_id) REFERENCES users ON DELETE SET NULL,
@@ -149,7 +149,3 @@ FROM  user_votes uv
 JOIN users u ON u.id = uv.user_id
 JOIN posts p ON p.id = uv.post_id
 JOIN topics t ON t.id = p.topic_id;
-
-
-
-
