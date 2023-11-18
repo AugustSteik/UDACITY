@@ -41,7 +41,7 @@ total_amt_usd,
 LEAD(total_amt_usd) OVER (ORDER BY occurred_at) AS lead,
 total_amt_usd - LEAD(total_amt_usd) OVER (ORDER BY occurred_at) AS lead_difference
 FROM orders
---Seems correct, but reverse the subtraction.
+-- correct, but reverse the subtraction.
 SELECT occurred_at,
        total_amt_usd,
        LEAD(total_amt_usd) OVER (ORDER BY occurred_at) AS lead,
