@@ -53,8 +53,6 @@ AVG(poster_qty) AS poster_qty
 
 FROM orders; -- all good
 
---Median?? - Could have gotten this considering the answer
--- just included the number of rows in the table without finding in the same query
 --Answer:
 SELECT *
 FROM (SELECT total_amt_usd
@@ -65,7 +63,7 @@ ORDER BY total_amt_usd DESC
 LIMIT 2;
 -- The above used a SUBQUERY
 
--- My attempt (non-working)
+-- My attempt (error)
 SELECT total_amt_usd
 FROM (SELECT (COUNT(total_amt_usd)/2) AS location
       FROM orders) AS table1
@@ -73,7 +71,7 @@ FROM (SELECT (COUNT(total_amt_usd)/2) AS location
       ORDER BY total_amt_usd DESC
       LIMIT 1;
 
--- Also non-working:
+-- v2:
 SELECT (COUNT(total_amt_usd)/2) AS location
 FROM orders AS table1;
 
@@ -411,7 +409,7 @@ ON accounts.id = web_events.account_id
 
 GROUP BY channel, acc_name
 ORDER BY no_of_channel_hits DESC
---direst was most used
+--direct was most used
 --correct
 
 
@@ -468,7 +466,7 @@ GROUP BY name, time
 HAVING (name = 'Walmart')
 ORDER BY sum_gloss DESC;
 -- May 2016 Walmart spent the most on gloss
--- correct!
+-- correct
 
 
 -- CASE statements
