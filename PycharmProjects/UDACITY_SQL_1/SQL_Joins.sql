@@ -40,7 +40,7 @@ join sales_reps -- reversed
 on region.id = sales_reps.region_id
 
 join accounts
-on sales_reps.id = accounts.sales_rep_id -- They seem to have these reversed in the answers i.e. FK = PK
+on sales_reps.id = accounts.sales_rep_id 
 
 order by accounts.name;
 
@@ -156,7 +156,7 @@ WHERE (orders.standard_qty > 100)
 AND (orders.poster_qty > 50)
 AND (orders.total != 0)
 ORDER BY unit_price;
---correct i think, they used different order:
+--correct output
 
 --FROM region r
 --JOIN sales_reps s
